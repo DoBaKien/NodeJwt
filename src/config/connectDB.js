@@ -1,8 +1,13 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 function connect() {
-    mongoose
-        .connect("mongodb://127.0.0.1:27017/Node_f8")
-        .then(() => console.log("Connected!"));
+  const mongodbURL =
+    "mongodb+srv://kiendoba1905:kien2209@cluster0.pfrctsb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+  mongoose
+    .connect(mongodbURL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => console.log("Connected!"));
 }
 
-export default connect
+export default connect;
