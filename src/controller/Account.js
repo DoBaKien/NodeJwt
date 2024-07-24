@@ -1,36 +1,27 @@
 const Account = require("../modal/account");
 const User = require("../modal/user");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 
 const handleErrors = (err) => {
-  console.log(err.message, err.code);
-  let errors = { email: "", password: "" };
+  let errors;
 
   // incorrect email
   if (err.message === "incorrect email") {
-    errors.email = "That email is not registered";
+    errors = "That email is not registered";
   }
 
   // incorrect password
   if (err.message === "incorrect password") {
-    errors.password = "That password is incorrect";
+    errors = "That password is incorrect";
   }
 
   // duplicate email error
   if (err.code === 11000) {
     errors.email = "that email is already registered";
-    return errors;
   }
 
   // validation errors
-  if (err.message.includes("user validation failed")) {
-    // console.log(err);
-    Object.values(err.errors).forEach(({ properties }) => {
-      // console.log(val);
-      // console.log(properties);
-      errors[properties.path] = properties.message;
-    });
-  }
 
   return errors;
 };
@@ -51,32 +42,23 @@ let getAllAccounts = async (req, res, next) => {
 };
 
 let register = async (req, res, next) => {
-  const { email, password } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     const acc = await Account.create({ email, password });
-    const atIndex = email.indexOf("@");
 
-    if (atIndex !== -1) {
-      // Lấy phần tử của chuỗi trước ký tự '@'
-      const name = email.slice(0, atIndex);
-      await User.create({ name, email });
-    } else {
-      console.log("Không tìm thấy ký tự @ trong địa chỉ email.");
-    }
+    await User.create({ name, email });
 
     const token = createToken(acc._id);
     res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
     res.status(201).json({ acc: acc._id });
   } catch (err) {
-    const errors = handleErrors(err);
-    res.status(400).json({ errors });
+    res.status(400).json({ err });
   }
 };
 
 let login = async (req, res) => {
   const { email, password } = req.body;
-
   try {
     const acc = await Account.login(email, password);
     const token = createToken(acc._id);
@@ -87,34 +69,103 @@ let login = async (req, res) => {
     res.status(400).json({ errors });
   }
 };
-
+let logout = async (req, res) => {
+  res.cookie("jwt", "", { maxAge: 1 });
+  res.status(200).json({ message: "Logged out successfully" });
+};
 let checkLogin = async (req, res) => {
-  const jwtCookie = req.headers.cookie
-    ? req.headers.cookie.split("; ").find((cookie) => cookie.startsWith("jwt="))
+  const jwtCookie = req.headers.authorization
+    ? req.headers.authorization
+        .split("; ")
+        .find((authorization) => authorization.startsWith("jwt="))
     : null;
+
   if (jwtCookie) {
-    // Tách giá trị của cookie
     const token = jwtCookie.split("=")[1];
 
-    // Giải mã token
-    jwt.verify(token, "net ninja secret", (err, decodedToken) => {
-      if (err) {
-        console.log("Token không hợp lệ:", err.message);
-        res.send("Token không hợp lệ.");
-      } else {
-        // Token hợp lệ, xử lý nó ở đây
-        console.log("Dữ liệu trong token:", decodedToken);
-        res.send("Dữ liệu trong token: " + JSON.stringify(decodedToken));
-      }
-    });
+    try {
+      const decodedToken = await new Promise((resolve, reject) => {
+        jwt.verify(token, "net ninja secret", (err, decodedToken) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(decodedToken);
+          }
+        });
+      });
+
+      return decodedToken.id;
+    } catch (err) {
+      console.log("Token không hợp lệ:", err.message);
+      res.send("Token không hợp lệ.");
+      return null;
+    }
   } else {
-    // Cookie không tồn tại
     console.log("Cookie không tồn tại.");
     res.send("Cookie không tồn tại.");
+    return null;
   }
 };
 
-let deleteAcc = async (req, res, next) => {};
+let deleteAcc = async (req, res) => {
+  const { id } = req.params;
+  const account = await Account.findById(id);
+  const userD = await User.findOne({ email: account.email });
+  const acc = await Account.findByIdAndDelete(id);
+  const del = await User.findByIdAndDelete(userD._id);
+  if (!acc && !del) {
+    return res.status(404).json({ message: "loi" });
+  }
+  res.status(200).json({ message: "done" });
+};
+
+let getLog = async (req, res) => {
+  const userId = await checkLogin(req, res);
+  if (!userId) {
+    return res.status(401).json({ message: "Login required!" });
+  }
+  try {
+    const user = await Account.findById(userId);
+    const userD = await User.findOne({ email: user.email });
+    return res.status(200).json({ userD });
+  } catch (err) {
+    return res.status(500).json({ err });
+  }
+};
+
+let changePass = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  if (newPassword.length < 6) {
+    return res
+      .status(401)
+      .json({ message: "Minimum password length is 6 characters" });
+  }
+
+  const userId = await checkLogin(req, res);
+  if (!userId) {
+    return res.status(401).json({ message: "Login required!" });
+  }
+
+  try {
+    const user = await Account.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    bcrypt.compare(oldPassword, user.password, function (err, result) {
+      if (result) {
+        user.password = newPassword;
+        user.save();
+        return res
+          .status(200)
+          .json({ message: "Password changed successfully" });
+      } else {
+        return res.status(401).json({ message: "password does not match" });
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 module.exports = {
   getAllAccounts,
@@ -122,4 +173,7 @@ module.exports = {
   login,
   deleteAcc,
   checkLogin,
+  changePass,
+  logout,
+  getLog,
 };

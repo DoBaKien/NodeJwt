@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.2.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/index.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="form-box" id="loginform">
+            <h1 id="title">Sign Up</h1>
+            <form>
+                <div class="input-group">
+                    <p id="warn-up">ERROR</p>
+                    <div class="input-field" id="namefield">
+                        <i class="ri-user-fill"></i>
+                        <input type="text" name="name" placeholder="Name" id="name">
+                    </div>
+                    <div id="box-req">
+                        <div class="box-warn">
+                            <div id="warn">ERROR</div>
+                        </div>
+                    </div>
+                    <div class="input-field">
+                        <i class="ri-mail-fill"></i>
+                        <input type="email" name="email" placeholder="Email" id="email" required>
+                    </div>
+                    <div class="input-field">
+                        <i class="ri-lock-fill"></i>
+                        <input type="password" name="password" placeholder="Password" id="password" required>
+                    </div>
+                    <p>Lost password <a href="">Click Here</a></p>
+                </div>
+                <div class="btn-field">
+                    <button type="submit" id="signupbtn">Sign up</button>
+                    <button type="submit" id="signinbtn" class="disable">Sign in</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="../js/fetchData.js"></script>
+    <script src="../js/index.js"></script>
+</body>
+
+</html>

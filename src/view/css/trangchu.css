@@ -1,0 +1,29 @@
+body {
+  color: white;
+}
+tbody button {
+  outline: 0;
+  border: 0;
+  padding: 5px 10px;
+  background-color: darksalmon;
+  color: white;
+}
+
+tbody button:first-child {
+  margin-right: 15px;
+  background-color: tomato;
+}
+h1 {
+  margin-top: 30px;
+}
+.modal-content {
+  background-color: #343a40 !important; /* Màu nền tối */
+  color: #ffffff; /* Màu chữ sáng */
+
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+#alert {
+  max-height: 0px;
+  overflow: hidden;
+  transition: max-height 0.5s ease;
+}
